@@ -402,7 +402,7 @@ class Enum(ProtoElement):
         result += '\n}'
 
         if self.packed:
-            result += ' pb_packed'
+            result += ' usr_pb_packed'
 
         result += ' %s;' % self.names
         return result
@@ -602,11 +602,11 @@ class Field:
                                     "but max_size is not given." % self.name)
 
                 self.enc_size = varint_max_size(self.max_size) + self.max_size
-                self.ctype = 'pb_byte_t'
+                self.ctype = 'usr_pb_byte_t'
                 self.array_decl += '[%d]' % self.max_size
             else:
                 self.pbtype = 'BYTES'
-                self.ctype = 'pb_bytes_array_t'
+                self.ctype = 'usr_pb_bytes_array_t'
                 if self.allocation == 'STATIC':
                     self.ctype = self.struct_name + self.name + 't'
                     self.enc_size = varint_max_size(self.max_size) + self.max_size
@@ -631,8 +631,8 @@ class Field:
         if self.allocation == 'POINTER':
             if self.rules == 'REPEATED':
                 if self.pbtype == 'MSG_W_CB':
-                    result += '    pb_callback_t cb_' + self.name + ';\n'
-                result += '    pb_size_t ' + self.name + '_count;\n'
+                    result += '    usr_pb_callback_t cb_' + self.name + ';\n'
+                result += '    usr_pb_size_t ' + self.name + '_count;\n'
 
             if self.pbtype in ['MESSAGE', 'MSG_W_CB']:
                 # Use struct definition, so recursive submessages are possible
@@ -649,19 +649,19 @@ class Field:
             result += '    %s %s;' % (self.callback_datatype, self.name)
         else:
             if self.pbtype == 'MSG_W_CB' and self.rules in ['OPTIONAL', 'REPEATED']:
-                result += '    pb_callback_t cb_' + self.name + ';\n'
+                result += '    usr_pb_callback_t cb_' + self.name + ';\n'
 
             if self.rules == 'OPTIONAL':
                 result += '    bool has_' + self.name + ';\n'
             elif self.rules == 'REPEATED':
-                result += '    pb_size_t ' + self.name + '_count;\n'
+                result += '    usr_pb_size_t ' + self.name + '_count;\n'
             result += '    %s %s%s;' % (self.ctype, self.name, self.array_decl)
         return result
 
     def types(self):
         '''Return definitions for any special types this field might need.'''
         if self.pbtype == 'BYTES' and self.allocation == 'STATIC':
-            result = 'typedef PB_BYTES_ARRAY_T(%d) %s;\n' % (self.max_size, self.ctype)
+            result = 'typedef usr_PB_BYTES_ARRAY_T(%d) %s;\n' % (self.max_size, self.ctype)
         else:
             result = ''
         return result
@@ -918,7 +918,7 @@ class Field:
         return self.allocation == 'CALLBACK'
 
     def requires_custom_field_callback(self):
-        return self.allocation == 'CALLBACK' and self.callback_datatype != 'pb_callback_t'
+        return self.allocation == 'CALLBACK' and self.callback_datatype != 'usr_pb_callback_t'
 
 class ExtensionRange(Field):
     def __init__(self, struct_name, range_start, field_options):
@@ -933,20 +933,20 @@ class ExtensionRange(Field):
         self.pbtype = 'EXTENSION'
         self.rules = 'OPTIONAL'
         self.allocation = 'CALLBACK'
-        self.ctype = 'pb_extension_t'
+        self.ctype = 'usr_pb_extension_t'
         self.array_decl = ''
         self.default = None
         self.max_size = 0
         self.max_count = 0
         self.data_item_size = 0
         self.fixed_count = False
-        self.callback_datatype = 'pb_extension_t*'
+        self.callback_datatype = 'usr_pb_extension_t*'
 
     def requires_custom_field_callback(self):
         return False
 
     def __str__(self):
-        return '    pb_extension_t *extensions;'
+        return '    usr_pb_extension_t *extensions;'
 
     def types(self):
         return ''
@@ -987,7 +987,7 @@ class ExtensionField(Field):
             msg +='   type of extension fields is currently supported. */\n'
             return msg
 
-        return ('extern const pb_extension_type_t %s; /* field type: %s */\n' %
+        return ('extern const usr_pb_extension_type_t %s; /* field type: %s */\n' %
             (self.fullname, str(self).strip()))
 
     def extension_def(self, dependencies):
@@ -999,9 +999,9 @@ class ExtensionField(Field):
         result = "/* Definition for extension field %s */\n" % self.fullname
         result += str(self.msg)
         result += self.msg.fields_declaration(dependencies)
-        result += 'pb_byte_t %s_default[] = {0x00};\n' % self.msg.name
+        result += 'usr_pb_byte_t %s_default[] = {0x00};\n' % self.msg.name
         result += self.msg.fields_definition(dependencies)
-        result += 'const pb_extension_type_t %s = {\n' % self.fullname
+        result += 'const usr_pb_extension_type_t %s = {\n' % self.fullname
         result += '    NULL,\n'
         result += '    NULL,\n'
         result += '    &%s_msg\n' % self.msg.name
@@ -1046,9 +1046,9 @@ class OneOf(Field):
         result = ''
         if self.fields:
             if self.has_msg_cb:
-                result += '    pb_callback_t cb_' + self.name + ';\n'
+                result += '    usr_pb_callback_t cb_' + self.name + ';\n'
 
-            result += '    pb_size_t which_' + self.name + ";\n"
+            result += '    usr_pb_size_t which_' + self.name + ";\n"
             result += '    union {\n'
             for f in self.fields:
                 result += '    ' + str(f).replace('\n', '\n    ') + '\n'
@@ -1243,13 +1243,13 @@ class Message(ProtoElement):
         result += '\n}'
 
         if self.packed:
-            result += ' pb_packed'
+            result += ' usr_pb_packed'
 
         result += ' %s;' % self.name
 
         if self.packed:
-            result = 'PB_PACKED_STRUCT_START\n' + result
-            result += '\nPB_PACKED_STRUCT_END'
+            result = 'usr_PB_PACKED_STRUCT_START\n' + result
+            result += '\nusr_PB_PACKED_STRUCT_END'
 
         return result + '\n'
 
@@ -1322,8 +1322,8 @@ class Message(ProtoElement):
 
         has_callbacks = bool([f for f in self.fields if f.has_callbacks()])
         if has_callbacks:
-            if self.callback_function != 'pb_default_field_callback':
-                result += "extern bool %s(pb_istream_t *istream, pb_ostream_t *ostream, const pb_field_t *field);\n" % self.callback_function
+            if self.callback_function != 'usr_pb_default_field_callback':
+                result += "extern bool %s(usr_pb_istream_t *istream, usr_pb_ostream_t *ostream, const usr_pb_field_t *field);\n" % self.callback_function
             result += "#define %s_CALLBACK %s\n" % (self.name, self.callback_function)
         else:
             result += "#define %s_CALLBACK NULL\n" % self.name
@@ -1331,7 +1331,7 @@ class Message(ProtoElement):
         defval = self.default_value(dependencies)
         if defval:
             hexcoded = ''.join("\\x%02x" % ord(defval[i:i+1]) for i in range(len(defval)))
-            result += '#define %s_DEFAULT (const pb_byte_t*)"%s\\x00"\n' % (self.name, hexcoded)
+            result += '#define %s_DEFAULT (const usr_pb_byte_t*)"%s\\x00"\n' % (self.name, hexcoded)
         else:
             result += '#define %s_DEFAULT NULL\n' % self.name
 
@@ -1347,8 +1347,8 @@ class Message(ProtoElement):
     def fields_declaration_cpp_lookup(self):
         result = 'template <>\n'
         result += 'struct MessageDescriptor<%s> {\n' % (self.name)
-        result += '    static PB_INLINE_CONSTEXPR const pb_size_t fields_array_length = %d;\n' % (self.count_all_fields())
-        result += '    static inline const pb_msgdesc_t* fields() {\n'
+        result += '    static usr_PB_INLINE_CONSTEXPR const usr_pb_size_t fields_array_length = %d;\n' % (self.count_all_fields())
+        result += '    static inline const usr_pb_msgdesc_t* fields() {\n'
         result += '        return &%s_msg;\n' % (self.name)
         result += '    }\n'
         result += '};'
@@ -1360,7 +1360,7 @@ class Message(ProtoElement):
         if width == 1:
           width = 'AUTO'
 
-        result = 'PB_BIND(%s, %s, %s)\n' % (self.name, self.name, width)
+        result = 'usr_PB_BIND(%s, %s, %s)\n' % (self.name, self.name, width)
         return result
 
     def required_descriptor_width(self, dependencies):
@@ -1703,12 +1703,12 @@ class ProtoFile:
             symbol = make_identifier(self.fdesc.package + '_' + headername)
         else:
             symbol = make_identifier(headername)
-        yield '#ifndef PB_%s_INCLUDED\n' % symbol
-        yield '#define PB_%s_INCLUDED\n' % symbol
+        yield '#ifndef usr_PB_%s_INCLUDED\n' % symbol
+        yield '#define usr_PB_%s_INCLUDED\n' % symbol
         if self.math_include_required:
             yield '#include <math.h>\n'
         try:
-            yield options.libformat % ('pb.h')
+            yield options.libformat % ('usr_pb.h')
         except TypeError:
             # no %s specified - use whatever was passed in as options.libformat
             yield options.libformat
@@ -1732,7 +1732,7 @@ class ProtoFile:
 
         yield '\n'
 
-        yield '#if PB_PROTO_HEADER_VERSION != 40\n'
+        yield '#if usr_PB_PROTO_HEADER_VERSION != 40\n'
         yield '#error Regenerate this file with the current version of nanopb generator.\n'
         yield '#endif\n'
         yield '\n'
@@ -1787,7 +1787,7 @@ class ProtoFile:
             for msg in self.messages:
                 yield msg.fields_declaration(self.dependencies) + '\n'
             for msg in self.messages:
-                yield 'extern const pb_msgdesc_t %s_msg;\n' % msg.name
+                yield 'extern const usr_pb_msgdesc_t %s_msg;\n' % msg.name
             yield '\n'
 
             yield '/* Defines for backwards compatibility with code written before nanopb-0.4.0 */\n'
@@ -1829,7 +1829,7 @@ class ProtoFile:
               yield '/* Message IDs (where set with "msgid" option) */\n'
               for msg in self.messages:
                   if hasattr(msg,'msgid'):
-                      yield '#define PB_MSG_%d %s\n' % (msg.msgid, msg.name)
+                      yield '#define usr_PB_MSG_%d %s\n' % (msg.msgid, msg.name)
               yield '\n'
 
               symbol = make_identifier(headername.split('.')[0])
@@ -1841,7 +1841,7 @@ class ProtoFile:
                   if msize is not None:
                       m = msize
                   if hasattr(msg,'msgid'):
-                      yield '\tPB_MSG(%d,%s,%s) \\\n' % (msg.msgid, m, msg.name)
+                      yield '\tusr_PB_MSG(%d,%s,%s) \\\n' % (msg.msgid, m, msg.name)
               yield '\n'
 
               for msg in self.messages:
@@ -1885,7 +1885,7 @@ class ProtoFile:
         if Globals.protoc_insertion_points:
             yield '/* @@protoc_insertion_point(includes) */\n'
 
-        yield '#if PB_PROTO_HEADER_VERSION != 40\n'
+        yield '#if usr_PB_PROTO_HEADER_VERSION != 40\n'
         yield '#error Regenerate this file with the current version of nanopb generator.\n'
         yield '#endif\n'
         yield '\n'
@@ -1905,9 +1905,9 @@ class ProtoFile:
             largest_count = largest_msg.count_required_fields()
             if largest_count > 64:
                 yield '\n/* Check that missing required fields will be properly detected */\n'
-                yield '#if PB_MAX_REQUIRED_FIELDS < %d\n' % largest_count
+                yield '#if usr_PB_MAX_REQUIRED_FIELDS < %d\n' % largest_count
                 yield '#error Properly detecting missing required fields in %s requires \\\n' % largest_msg.name
-                yield '       setting PB_MAX_REQUIRED_FIELDS to %d or more.\n' % largest_count
+                yield '       setting usr_PB_MAX_REQUIRED_FIELDS to %d or more.\n' % largest_count
                 yield '#endif\n'
 
         # Add check for sizeof(double)
@@ -1919,12 +1919,12 @@ class ProtoFile:
 
         if has_double:
             yield '\n'
-            yield '#ifndef PB_CONVERT_DOUBLE_FLOAT\n'
+            yield '#ifndef usr_PB_CONVERT_DOUBLE_FLOAT\n'
             yield '/* On some platforms (such as AVR), double is really float.\n'
             yield ' * To be able to encode/decode double on these platforms, you need.\n'
-            yield ' * to define PB_CONVERT_DOUBLE_FLOAT in pb.h or compiler command line.\n'
+            yield ' * to define usr_PB_CONVERT_DOUBLE_FLOAT in pb.h or compiler command line.\n'
             yield ' */\n'
-            yield 'PB_STATIC_ASSERT(sizeof(double) == 8, DOUBLE_MUST_BE_8_BYTES)\n'
+            yield 'usr_PB_STATIC_ASSERT(sizeof(double) == 8, DOUBLE_MUST_BE_8_BYTES)\n'
             yield '#endif\n'
 
         yield '\n'

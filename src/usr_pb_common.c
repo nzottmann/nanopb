@@ -1,11 +1,11 @@
-/* pb_common.c: Common support functions for pb_encode.c and pb_decode.c.
+/* usr_pb_common.c: Common support functions for usr_pb_encode.c and usr_pb_decode.c.
  *
  * 2014 Petteri Aimonen <jpa@kapsi.fi>
  */
 
-#include "pb_common.h"
+#include "usr_pb_common.h"
 
-static bool load_descriptor_values(pb_field_iter_t *iter)
+static bool load_descriptor_values(usr_pb_field_iter_t *iter)
 {
     uint32_t word0;
     uint32_t data_offset;
@@ -14,59 +14,59 @@ static bool load_descriptor_values(pb_field_iter_t *iter)
     if (iter->index >= iter->descriptor->field_count)
         return false;
 
-    word0 = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index]);
-    iter->type = (pb_type_t)((word0 >> 8) & 0xFF);
+    word0 = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index]);
+    iter->type = (usr_pb_type_t)((word0 >> 8) & 0xFF);
 
     switch(word0 & 3)
     {
         case 0: {
             /* 1-word format */
             iter->array_size = 1;
-            iter->tag = (pb_size_t)((word0 >> 2) & 0x3F);
+            iter->tag = (usr_pb_size_t)((word0 >> 2) & 0x3F);
             size_offset = (int_least8_t)((word0 >> 24) & 0x0F);
             data_offset = (word0 >> 16) & 0xFF;
-            iter->data_size = (pb_size_t)((word0 >> 28) & 0x0F);
+            iter->data_size = (usr_pb_size_t)((word0 >> 28) & 0x0F);
             break;
         }
 
         case 1: {
             /* 2-word format */
-            uint32_t word1 = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 1]);
+            uint32_t word1 = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 1]);
 
-            iter->array_size = (pb_size_t)((word0 >> 16) & 0x0FFF);
-            iter->tag = (pb_size_t)(((word0 >> 2) & 0x3F) | ((word1 >> 28) << 6));
+            iter->array_size = (usr_pb_size_t)((word0 >> 16) & 0x0FFF);
+            iter->tag = (usr_pb_size_t)(((word0 >> 2) & 0x3F) | ((word1 >> 28) << 6));
             size_offset = (int_least8_t)((word0 >> 28) & 0x0F);
             data_offset = word1 & 0xFFFF;
-            iter->data_size = (pb_size_t)((word1 >> 16) & 0x0FFF);
+            iter->data_size = (usr_pb_size_t)((word1 >> 16) & 0x0FFF);
             break;
         }
 
         case 2: {
             /* 4-word format */
-            uint32_t word1 = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 1]);
-            uint32_t word2 = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 2]);
-            uint32_t word3 = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 3]);
+            uint32_t word1 = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 1]);
+            uint32_t word2 = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 2]);
+            uint32_t word3 = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 3]);
 
-            iter->array_size = (pb_size_t)(word0 >> 16);
-            iter->tag = (pb_size_t)(((word0 >> 2) & 0x3F) | ((word1 >> 8) << 6));
+            iter->array_size = (usr_pb_size_t)(word0 >> 16);
+            iter->tag = (usr_pb_size_t)(((word0 >> 2) & 0x3F) | ((word1 >> 8) << 6));
             size_offset = (int_least8_t)(word1 & 0xFF);
             data_offset = word2;
-            iter->data_size = (pb_size_t)word3;
+            iter->data_size = (usr_pb_size_t)word3;
             break;
         }
 
         default: {
             /* 8-word format */
-            uint32_t word1 = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 1]);
-            uint32_t word2 = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 2]);
-            uint32_t word3 = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 3]);
-            uint32_t word4 = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 4]);
+            uint32_t word1 = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 1]);
+            uint32_t word2 = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 2]);
+            uint32_t word3 = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 3]);
+            uint32_t word4 = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index + 4]);
 
-            iter->array_size = (pb_size_t)word4;
-            iter->tag = (pb_size_t)(((word0 >> 2) & 0x3F) | ((word1 >> 8) << 6));
+            iter->array_size = (usr_pb_size_t)word4;
+            iter->tag = (usr_pb_size_t)(((word0 >> 2) & 0x3F) | ((word1 >> 8) << 6));
             size_offset = (int_least8_t)(word1 & 0xFF);
             data_offset = word2;
-            iter->data_size = (pb_size_t)word3;
+            iter->data_size = (usr_pb_size_t)word3;
             break;
         }
     }
@@ -85,9 +85,9 @@ static bool load_descriptor_values(pb_field_iter_t *iter)
         {
             iter->pSize = (char*)iter->pField - size_offset;
         }
-        else if (PB_HTYPE(iter->type) == PB_HTYPE_REPEATED &&
-                 (PB_ATYPE(iter->type) == PB_ATYPE_STATIC ||
-                  PB_ATYPE(iter->type) == PB_ATYPE_POINTER))
+        else if (usr_PB_HTYPE(iter->type) == usr_PB_HTYPE_REPEATED &&
+                 (usr_PB_ATYPE(iter->type) == usr_PB_ATYPE_STATIC ||
+                  usr_PB_ATYPE(iter->type) == usr_PB_ATYPE_POINTER))
         {
             /* Fixed count array */
             iter->pSize = &iter->array_size;
@@ -97,7 +97,7 @@ static bool load_descriptor_values(pb_field_iter_t *iter)
             iter->pSize = NULL;
         }
 
-        if (PB_ATYPE(iter->type) == PB_ATYPE_POINTER && iter->pField != NULL)
+        if (usr_PB_ATYPE(iter->type) == usr_PB_ATYPE_POINTER && iter->pField != NULL)
         {
             iter->pData = *(void**)iter->pField;
         }
@@ -107,7 +107,7 @@ static bool load_descriptor_values(pb_field_iter_t *iter)
         }
     }
 
-    if (PB_LTYPE_IS_SUBMSG(iter->type))
+    if (usr_PB_LTYPE_IS_SUBMSG(iter->type))
     {
         iter->submsg_desc = iter->descriptor->submsg_info[iter->submessage_index];
     }
@@ -119,7 +119,7 @@ static bool load_descriptor_values(pb_field_iter_t *iter)
     return true;
 }
 
-static void advance_iterator(pb_field_iter_t *iter)
+static void advance_iterator(usr_pb_field_iter_t *iter)
 {
     iter->index++;
 
@@ -139,21 +139,21 @@ static void advance_iterator(pb_field_iter_t *iter)
          * - bits 2..7 give the lowest bits of tag number.
          * - bits 8..15 give the field type.
          */
-        uint32_t prev_descriptor = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index]);
-        pb_type_t prev_type = (prev_descriptor >> 8) & 0xFF;
-        pb_size_t descriptor_len = (pb_size_t)(1 << (prev_descriptor & 3));
+        uint32_t prev_descriptor = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index]);
+        usr_pb_type_t prev_type = (prev_descriptor >> 8) & 0xFF;
+        usr_pb_size_t descriptor_len = (usr_pb_size_t)(1 << (prev_descriptor & 3));
 
         /* Add to fields.
-         * The cast to pb_size_t is needed to avoid -Wconversion warning.
+         * The cast to usr_pb_size_t is needed to avoid -Wconversion warning.
          * Because the data is is constants from generator, there is no danger of overflow.
          */
-        iter->field_info_index = (pb_size_t)(iter->field_info_index + descriptor_len);
-        iter->required_field_index = (pb_size_t)(iter->required_field_index + (PB_HTYPE(prev_type) == PB_HTYPE_REQUIRED));
-        iter->submessage_index = (pb_size_t)(iter->submessage_index + PB_LTYPE_IS_SUBMSG(prev_type));
+        iter->field_info_index = (usr_pb_size_t)(iter->field_info_index + descriptor_len);
+        iter->required_field_index = (usr_pb_size_t)(iter->required_field_index + (usr_PB_HTYPE(prev_type) == usr_PB_HTYPE_REQUIRED));
+        iter->submessage_index = (usr_pb_size_t)(iter->submessage_index + usr_PB_LTYPE_IS_SUBMSG(prev_type));
     }
 }
 
-bool pb_field_iter_begin(pb_field_iter_t *iter, const pb_msgdesc_t *desc, void *message)
+bool usr_pb_field_iter_begin(usr_pb_field_iter_t *iter, const usr_pb_msgdesc_t *desc, void *message)
 {
     memset(iter, 0, sizeof(*iter));
 
@@ -163,36 +163,36 @@ bool pb_field_iter_begin(pb_field_iter_t *iter, const pb_msgdesc_t *desc, void *
     return load_descriptor_values(iter);
 }
 
-bool pb_field_iter_begin_extension(pb_field_iter_t *iter, pb_extension_t *extension)
+bool usr_pb_field_iter_begin_extension(usr_pb_field_iter_t *iter, usr_pb_extension_t *extension)
 {
-    const pb_msgdesc_t *msg = (const pb_msgdesc_t*)extension->type->arg;
+    const usr_pb_msgdesc_t *msg = (const usr_pb_msgdesc_t*)extension->type->arg;
     bool status;
 
-    uint32_t word0 = PB_PROGMEM_READU32(msg->field_info[0]);
-    if (PB_ATYPE(word0 >> 8) == PB_ATYPE_POINTER)
+    uint32_t word0 = usr_PB_PROGMEM_READU32(msg->field_info[0]);
+    if (usr_PB_ATYPE(word0 >> 8) == usr_PB_ATYPE_POINTER)
     {
         /* For pointer extensions, the pointer is stored directly
          * in the extension structure. This avoids having an extra
          * indirection. */
-        status = pb_field_iter_begin(iter, msg, &extension->dest);
+        status = usr_pb_field_iter_begin(iter, msg, &extension->dest);
     }
     else
     {
-        status = pb_field_iter_begin(iter, msg, extension->dest);
+        status = usr_pb_field_iter_begin(iter, msg, extension->dest);
     }
 
     iter->pSize = &extension->found;
     return status;
 }
 
-bool pb_field_iter_next(pb_field_iter_t *iter)
+bool usr_pb_field_iter_next(usr_pb_field_iter_t *iter)
 {
     advance_iterator(iter);
     (void)load_descriptor_values(iter);
     return iter->index != 0;
 }
 
-bool pb_field_iter_find(pb_field_iter_t *iter, uint32_t tag)
+bool usr_pb_field_iter_find(usr_pb_field_iter_t *iter, uint32_t tag)
 {
     if (iter->tag == tag)
     {
@@ -204,7 +204,7 @@ bool pb_field_iter_find(pb_field_iter_t *iter, uint32_t tag)
     }
     else
     {
-        pb_size_t start = iter->index;
+        usr_pb_size_t start = iter->index;
         uint32_t fieldinfo;
 
         if (tag < iter->tag)
@@ -221,7 +221,7 @@ bool pb_field_iter_find(pb_field_iter_t *iter, uint32_t tag)
             advance_iterator(iter);
 
             /* Do fast check for tag number match */
-            fieldinfo = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index]);
+            fieldinfo = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index]);
 
             if (((fieldinfo >> 2) & 0x3F) == (tag & 0x3F))
             {
@@ -229,7 +229,7 @@ bool pb_field_iter_find(pb_field_iter_t *iter, uint32_t tag)
                 (void)load_descriptor_values(iter);
 
                 if (iter->tag == tag &&
-                    PB_LTYPE(iter->type) != PB_LTYPE_EXTENSION)
+                    usr_PB_LTYPE(iter->type) != usr_PB_LTYPE_EXTENSION)
                 {
                     /* Found it */
                     return true;
@@ -243,15 +243,15 @@ bool pb_field_iter_find(pb_field_iter_t *iter, uint32_t tag)
     }
 }
 
-bool pb_field_iter_find_extension(pb_field_iter_t *iter)
+bool usr_pb_field_iter_find_extension(usr_pb_field_iter_t *iter)
 {
-    if (PB_LTYPE(iter->type) == PB_LTYPE_EXTENSION)
+    if (usr_PB_LTYPE(iter->type) == usr_PB_LTYPE_EXTENSION)
     {
         return true;
     }
     else
     {
-        pb_size_t start = iter->index;
+        usr_pb_size_t start = iter->index;
         uint32_t fieldinfo;
 
         do
@@ -260,9 +260,9 @@ bool pb_field_iter_find_extension(pb_field_iter_t *iter)
             advance_iterator(iter);
 
             /* Do fast check for field type */
-            fieldinfo = PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index]);
+            fieldinfo = usr_PB_PROGMEM_READU32(iter->descriptor->field_info[iter->field_info_index]);
 
-            if (PB_LTYPE((fieldinfo >> 8) & 0xFF) == PB_LTYPE_EXTENSION)
+            if (usr_PB_LTYPE((fieldinfo >> 8) & 0xFF) == usr_PB_LTYPE_EXTENSION)
             {
                 return load_descriptor_values(iter);
             }
@@ -274,7 +274,7 @@ bool pb_field_iter_find_extension(pb_field_iter_t *iter)
     }
 }
 
-static void *pb_const_cast(const void *p)
+static void *usr_pb_const_cast(const void *p)
 {
     /* Note: this casts away const, in order to use the common field iterator
      * logic for both encoding and decoding. The cast is done using union
@@ -287,21 +287,21 @@ static void *pb_const_cast(const void *p)
     return t.p1;
 }
 
-bool pb_field_iter_begin_const(pb_field_iter_t *iter, const pb_msgdesc_t *desc, const void *message)
+bool usr_pb_field_iter_begin_const(usr_pb_field_iter_t *iter, const usr_pb_msgdesc_t *desc, const void *message)
 {
-    return pb_field_iter_begin(iter, desc, pb_const_cast(message));
+    return usr_pb_field_iter_begin(iter, desc, usr_pb_const_cast(message));
 }
 
-bool pb_field_iter_begin_extension_const(pb_field_iter_t *iter, const pb_extension_t *extension)
+bool usr_pb_field_iter_begin_extension_const(usr_pb_field_iter_t *iter, const usr_pb_extension_t *extension)
 {
-    return pb_field_iter_begin_extension(iter, (pb_extension_t*)pb_const_cast(extension));
+    return usr_pb_field_iter_begin_extension(iter, (usr_pb_extension_t*)usr_pb_const_cast(extension));
 }
 
-bool pb_default_field_callback(pb_istream_t *istream, pb_ostream_t *ostream, const pb_field_t *field)
+bool usr_pb_default_field_callback(usr_pb_istream_t *istream, usr_pb_ostream_t *ostream, const usr_pb_field_t *field)
 {
-    if (field->data_size == sizeof(pb_callback_t))
+    if (field->data_size == sizeof(usr_pb_callback_t))
     {
-        pb_callback_t *pCallback = (pb_callback_t*)field->pData;
+        usr_pb_callback_t *pCallback = (usr_pb_callback_t*)field->pData;
 
         if (pCallback != NULL)
         {
@@ -321,7 +321,7 @@ bool pb_default_field_callback(pb_istream_t *istream, pb_ostream_t *ostream, con
 
 }
 
-#ifdef PB_VALIDATE_UTF8
+#ifdef usr_PB_VALIDATE_UTF8
 
 /* This function checks whether a string is valid UTF-8 text.
  *
@@ -331,9 +331,9 @@ bool pb_default_field_callback(pb_istream_t *istream, pb_ostream_t *ostream, con
  * any compatible with it.
  */
 
-bool pb_validate_utf8(const char *str)
+bool usr_pb_validate_utf8(const char *str)
 {
-    const pb_byte_t *s = (const pb_byte_t*)str;
+    const usr_pb_byte_t *s = (const usr_pb_byte_t*)str;
     while (*s)
     {
         if (*s < 0x80)
@@ -385,4 +385,3 @@ bool pb_validate_utf8(const char *str)
 }
 
 #endif
-

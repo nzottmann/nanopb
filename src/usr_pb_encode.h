@@ -1,12 +1,12 @@
-/* pb_encode.h: Functions to encode protocol buffers. Depends on pb_encode.c.
- * The main function is pb_encode. You also need an output stream, and the
- * field descriptions created by nanopb_generator.py.
+/* usr_pb_encode.h: Functions to encode protocol buffers. Depends on usr_pb_encode.c.
+ * The main function is usr_pb_encode. You also need an output stream, and the
+ * field descriptions created by nanousr_pb_generator.py.
  */
 
-#ifndef PB_ENCODE_H_INCLUDED
-#define PB_ENCODE_H_INCLUDED
+#ifndef usr_PB_ENCODE_H_INCLUDED
+#define usr_PB_ENCODE_H_INCLUDED
 
-#include "pb.h"
+#include "usr_pb.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,13 +20,13 @@ extern "C" {
  *
  * 1) Return false on IO errors. This will cause encoding to abort.
  * 2) You can use state to store your own data (e.g. buffer pointer).
- * 3) pb_write will update bytes_written after your callback runs.
+ * 3) usr_pb_write will update bytes_written after your callback runs.
  * 4) Substreams will modify max_size and bytes_written. Don't use them
  *    to calculate any pointers.
  */
-struct pb_ostream_s
+struct usr_pb_ostream_s
 {
-#ifdef PB_BUFFER_ONLY
+#ifdef usr_PB_BUFFER_ONLY
     /* Callback pointer is not used in buffer-only configuration.
      * Having an int pointer here allows binary compatibility but
      * gives an error if someone tries to assign callback function.
@@ -35,13 +35,13 @@ struct pb_ostream_s
      */
     int *callback;
 #else
-    bool (*callback)(pb_ostream_t *stream, const pb_byte_t *buf, size_t count);
+    bool (*callback)(usr_pb_ostream_t *stream, const usr_pb_byte_t *buf, size_t count);
 #endif
     void *state;          /* Free field for use by callback implementation. */
     size_t max_size;      /* Limit number of output bytes written (or use SIZE_MAX). */
     size_t bytes_written; /* Number of bytes written so far. */
     
-#ifndef PB_NO_ERRMSG
+#ifndef usr_PB_NO_ERRMSG
     const char *errmsg;
 #endif
 };
@@ -58,37 +58,37 @@ struct pb_ostream_s
  * Example usage:
  *    MyMessage msg = {};
  *    uint8_t buffer[64];
- *    pb_ostream_t stream;
+ *    usr_pb_ostream_t stream;
  *
  *    msg.field1 = 42;
- *    stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
- *    pb_encode(&stream, MyMessage_fields, &msg);
+ *    stream = usr_pb_ostream_from_buffer(buffer, sizeof(buffer));
+ *    usr_pb_encode(&stream, MyMessage_fields, &msg);
  */
-bool pb_encode(pb_ostream_t *stream, const pb_msgdesc_t *fields, const void *src_struct);
+bool usr_pb_encode(usr_pb_ostream_t *stream, const usr_pb_msgdesc_t *fields, const void *src_struct);
 
-/* Extended version of pb_encode, with several options to control the
+/* Extended version of usr_pb_encode, with several options to control the
  * encoding process:
  *
- * PB_ENCODE_DELIMITED:      Prepend the length of message as a varint.
+ * usr_PB_ENCODE_DELIMITED:      Prepend the length of message as a varint.
  *                           Corresponds to writeDelimitedTo() in Google's
  *                           protobuf API.
  *
- * PB_ENCODE_NULLTERMINATED: Append a null byte to the message for termination.
+ * usr_PB_ENCODE_NULLTERMINATED: Append a null byte to the message for termination.
  *                           NOTE: This behaviour is not supported in most other
- *                           protobuf implementations, so PB_ENCODE_DELIMITED
+ *                           protobuf implementations, so usr_PB_ENCODE_DELIMITED
  *                           is a better option for compatibility.
  */
-#define PB_ENCODE_DELIMITED       0x02U
-#define PB_ENCODE_NULLTERMINATED  0x04U
-bool pb_encode_ex(pb_ostream_t *stream, const pb_msgdesc_t *fields, const void *src_struct, unsigned int flags);
+#define usr_PB_ENCODE_DELIMITED       0x02U
+#define usr_PB_ENCODE_NULLTERMINATED  0x04U
+bool usr_pb_encode_ex(usr_pb_ostream_t *stream, const usr_pb_msgdesc_t *fields, const void *src_struct, unsigned int flags);
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
-#define pb_encode_delimited(s,f,d) pb_encode_ex(s,f,d, PB_ENCODE_DELIMITED)
-#define pb_encode_nullterminated(s,f,d) pb_encode_ex(s,f,d, PB_ENCODE_NULLTERMINATED)
+#define usr_pb_encode_delimited(s,f,d) usr_pb_encode_ex(s,f,d, usr_PB_ENCODE_DELIMITED)
+#define usr_pb_encode_nullterminated(s,f,d) usr_pb_encode_ex(s,f,d, usr_PB_ENCODE_NULLTERMINATED)
 
 /* Encode the message to get the size of the encoded data, but do not store
  * the data. */
-bool pb_get_encoded_size(size_t *size, const pb_msgdesc_t *fields, const void *src_struct);
+bool usr_pb_get_encoded_size(size_t *size, const usr_pb_msgdesc_t *fields, const void *src_struct);
 
 /**************************************
  * Functions for manipulating streams *
@@ -101,27 +101,27 @@ bool pb_get_encoded_size(size_t *size, const pb_msgdesc_t *fields, const void *s
  * Alternatively, you can use a custom stream that writes directly to e.g.
  * a file or a network socket.
  */
-pb_ostream_t pb_ostream_from_buffer(pb_byte_t *buf, size_t bufsize);
+usr_pb_ostream_t usr_pb_ostream_from_buffer(usr_pb_byte_t *buf, size_t bufsize);
 
 /* Pseudo-stream for measuring the size of a message without actually storing
  * the encoded data.
  * 
  * Example usage:
  *    MyMessage msg = {};
- *    pb_ostream_t stream = PB_OSTREAM_SIZING;
- *    pb_encode(&stream, MyMessage_fields, &msg);
+ *    usr_pb_ostream_t stream = usr_PB_OSTREAM_SIZING;
+ *    usr_pb_encode(&stream, MyMessage_fields, &msg);
  *    printf("Message size is %d\n", stream.bytes_written);
  */
-#ifndef PB_NO_ERRMSG
-#define PB_OSTREAM_SIZING {0,0,0,0,0}
+#ifndef usr_PB_NO_ERRMSG
+#define usr_PB_OSTREAM_SIZING {0,0,0,0,0}
 #else
-#define PB_OSTREAM_SIZING {0,0,0,0}
+#define usr_PB_OSTREAM_SIZING {0,0,0,0}
 #endif
 
-/* Function to write into a pb_ostream_t stream. You can use this if you need
+/* Function to write into a usr_pb_ostream_t stream. You can use this if you need
  * to append or prepend some custom headers to the message.
  */
-bool pb_write(pb_ostream_t *stream, const pb_byte_t *buf, size_t count);
+bool usr_pb_write(usr_pb_ostream_t *stream, const usr_pb_byte_t *buf, size_t count);
 
 
 /************************************************
@@ -130,53 +130,53 @@ bool pb_write(pb_ostream_t *stream, const pb_byte_t *buf, size_t count);
 
 /* Encode field header based on type and field number defined in the field
  * structure. Call this from the callback before writing out field contents. */
-bool pb_encode_tag_for_field(pb_ostream_t *stream, const pb_field_iter_t *field);
+bool usr_pb_encode_tag_for_field(usr_pb_ostream_t *stream, const usr_pb_field_iter_t *field);
 
 /* Encode field header by manually specifying wire type. You need to use this
  * if you want to write out packed arrays from a callback field. */
-bool pb_encode_tag(pb_ostream_t *stream, pb_wire_type_t wiretype, uint32_t field_number);
+bool usr_pb_encode_tag(usr_pb_ostream_t *stream, usr_pb_wire_type_t wiretype, uint32_t field_number);
 
 /* Encode an integer in the varint format.
  * This works for bool, enum, int32, int64, uint32 and uint64 field types. */
-#ifndef PB_WITHOUT_64BIT
-bool pb_encode_varint(pb_ostream_t *stream, uint64_t value);
+#ifndef usr_PB_WITHOUT_64BIT
+bool usr_pb_encode_varint(usr_pb_ostream_t *stream, uint64_t value);
 #else
-bool pb_encode_varint(pb_ostream_t *stream, uint32_t value);
+bool usr_pb_encode_varint(usr_pb_ostream_t *stream, uint32_t value);
 #endif
 
 /* Encode an integer in the zig-zagged svarint format.
  * This works for sint32 and sint64. */
-#ifndef PB_WITHOUT_64BIT
-bool pb_encode_svarint(pb_ostream_t *stream, int64_t value);
+#ifndef usr_PB_WITHOUT_64BIT
+bool usr_pb_encode_svarint(usr_pb_ostream_t *stream, int64_t value);
 #else
-bool pb_encode_svarint(pb_ostream_t *stream, int32_t value);
+bool usr_pb_encode_svarint(usr_pb_ostream_t *stream, int32_t value);
 #endif
 
 /* Encode a string or bytes type field. For strings, pass strlen(s) as size. */
-bool pb_encode_string(pb_ostream_t *stream, const pb_byte_t *buffer, size_t size);
+bool usr_pb_encode_string(usr_pb_ostream_t *stream, const usr_pb_byte_t *buffer, size_t size);
 
 /* Encode a fixed32, sfixed32 or float value.
  * You need to pass a pointer to a 4-byte wide C variable. */
-bool pb_encode_fixed32(pb_ostream_t *stream, const void *value);
+bool usr_pb_encode_fixed32(usr_pb_ostream_t *stream, const void *value);
 
-#ifndef PB_WITHOUT_64BIT
+#ifndef usr_PB_WITHOUT_64BIT
 /* Encode a fixed64, sfixed64 or double value.
  * You need to pass a pointer to a 8-byte wide C variable. */
-bool pb_encode_fixed64(pb_ostream_t *stream, const void *value);
+bool usr_pb_encode_fixed64(usr_pb_ostream_t *stream, const void *value);
 #endif
 
-#ifdef PB_CONVERT_DOUBLE_FLOAT
+#ifdef usr_PB_CONVERT_DOUBLE_FLOAT
 /* Encode a float value so that it appears like a double in the encoded
  * message. */
-bool pb_encode_float_as_double(pb_ostream_t *stream, float value);
+bool usr_pb_encode_float_as_double(usr_pb_ostream_t *stream, float value);
 #endif
 
 /* Encode a submessage field.
- * You need to pass the pb_field_t array and pointer to struct, just like
- * with pb_encode(). This internally encodes the submessage twice, first to
+ * You need to pass the usr_pb_field_t array and pointer to struct, just like
+ * with usr_pb_encode(). This internally encodes the submessage twice, first to
  * calculate message size and then to actually write it out.
  */
-bool pb_encode_submessage(pb_ostream_t *stream, const pb_msgdesc_t *fields, const void *src_struct);
+bool usr_pb_encode_submessage(usr_pb_ostream_t *stream, const usr_pb_msgdesc_t *fields, const void *src_struct);
 
 #ifdef __cplusplus
 } /* extern "C" */
